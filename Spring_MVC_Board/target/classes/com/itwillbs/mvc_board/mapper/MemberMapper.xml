@@ -75,6 +75,21 @@
   		SELECT name, id, email, date
   			FROM member
   	</select>
+  	
+  	
+  	<!-- 
+  	5. 
+  	
+  	 -->
+  	 <update id="updateMemberInfo">
+  	 	UPDATE member
+  	 		SET 
+  	 			name= #{name}, 
+  	 			gender = #{gender}, 
+  	 			email= CONCAT(#{email1}, '@', ${email2})
+ 			WHERE 
+ 	 			id = #{id}
+  	 </update>
 </mapper>
 
 
