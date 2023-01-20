@@ -42,6 +42,8 @@ public interface MemberMapper {
 			@Param("member") MemberVO member, //MemberVO 객체 이름을 member로 사용선언
 			@Param("newPasswd") String newPasswd //newPasswd 객체 이름을 newPasswd로 사용선언
 			);
+
+	public int deleteMember(MemberVO member);
 	
 
 }

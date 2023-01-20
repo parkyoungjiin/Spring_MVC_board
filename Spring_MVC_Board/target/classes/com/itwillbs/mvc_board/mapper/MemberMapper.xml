@@ -78,18 +78,48 @@
   	
   	
   	<!-- 
-  	5. 
-  	
+  	5. 정보수정작업 (updateMember)
+  	아이디가 일치하는 레코드를 찾아 이름, 성별, 이메일, 새 패스워드로 수정
+  	단, Mapper 인터페이스에서 각 파라미터의 변수명을 지정했으므로
+  	MemberVO 객체의 경우 member.파라미터명으로 접근해야 한다.
   	 -->
-  	 <update id="updateMemberInfo">
-  	 	UPDATE member
-  	 		SET 
-  	 			name= #{name}, 
-  	 			gender = #{gender}, 
-  	 			email= CONCAT(#{email1}, '@', ${email2})
- 			WHERE 
- 	 			id = #{id}
-  	 </update>
+<!--   	<update id="updateMemberInfo"> -->
+<!--   		UPDATE member -->
+<!--   			SET -->
+<!--   				name = #{member.name}, -->
+<!--   				gender = #{member.gender}, -->
+<!--   				email = CONCAT(#{member.email1}, '@', #{member.email2}), -->
+<!--   				passwd = #{newPasswd} -->
+<!--   			WHERE  -->
+<!--   				id = #{member.id} -->
+<!--   	</update> -->
+
+
+<!--  위 구문을 동적쿼리로 변경하여 새 패스워드 존재 여부에 따라 새 패스워드 변경 여부를 결정 -->
+
+	  	<update id="updateMemberInfo">
+	  		UPDATE member
+	  			SET
+	  				name = #{member.name}
+	  				,gender = #{member.gender}
+	  				,email = CONCAT(#{member.email1}, '@', #{member.email2})
+	  				<if test='newPasswd neq null and newPasswd neq ""'>
+	  				,passwd = #{newPasswd}
+	  				</if>
+	  			WHERE 
+	  				id = #{member.id}
+	  	</update>
+	  	
+	  	
+	  	<!-- 삭제 작업 -->
+	  	
+	  	<delete id="deleteMember">
+	  		DELETE
+	  			FROM member
+	  				WHERE id = #{id}
+	  	
+	  	</delete>
+	  	
 </mapper>
 
 

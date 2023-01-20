@@ -41,4 +41,8 @@ public class MemberService {
 		return mapper.updateMemberInfo(member, newPasswd);
 	}
 
+	public int removeMember(MemberVO member) {
+		return mapper.deleteMember(member);
+	}
+
 }

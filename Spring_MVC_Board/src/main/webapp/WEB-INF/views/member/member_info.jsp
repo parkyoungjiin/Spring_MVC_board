@@ -8,6 +8,15 @@
 <title>Insert title here</title>
 <link href="${pageContext.request.contextPath }/resources/css/default.css" rel ="stylesheet" type="text/css">
 <script src="${pageContext.request.contextPath }/resources/js/jquery-3.6.3.js"></script>
+<script type="text/javascript">
+	function confirmDelete() {
+		let result = confirm("정말로 탈퇴하시겠습니까?");
+		if(result){
+			alert("삭제 화면으로 이동합니다.");
+			location.href = "MemberDelete.me?id=${member.id}";
+		}
+	}
+</script>
 </head>
 <body>
 
@@ -65,6 +74,7 @@
 				<td colspan="2" align="center">
 					<input type="submit" value="회원가입">
 					<input type="button" value="취소" onclick="history.back()">
+					<input type="button" value="탈퇴" onclick="confirmDelete()">
 				</td>
 			</tr>
 		</table>

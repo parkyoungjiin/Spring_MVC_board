@@ -11,8 +11,11 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.google.protobuf.DescriptorProtos.SourceCodeInfo.Location;
 import com.itwillbs.mvc_board.service.MemberService;
 import com.itwillbs.mvc_board.vo.MemberVO;
 
@@ -131,46 +134,7 @@ public class MemberController {
 		return "redirect:/";
 	}
 	
-	// "/MemberInfo.me" 요청에 대한 회원 상세정보 조회 비즈니스 로직 처리 => memberInfo()
-	// => 파라미터 : 아이디(id)
-	@GetMapping(value = "/MemberInfo.me")
-	public String memberInfo(String id, HttpSession session, Model model) {
-		String sId = (String)session.getAttribute("sId");
-		
-		// 1. 세션 아이디가 없을 경우 "잘못된 접근"
-		if(sId == null || sId.equals("")) {
-			model.addAttribute("msg", "잘못된 접근입니다!");
-			return "fail_back";
-		} else {
-			// 2. 세션 아이디가 있을 경우
-			// 2-1) 세션 아이디와 전달받은 아이디가 다르고, 관리자가 아니면 "권한없음"
-			// !id.equals("")
-			System.out.println("세션 아이디 있음. 아이디 : " + id);
-			if(id != null && !id.equals("") && !id.equals(sId) && !sId.equals("admin")) {
-				model.addAttribute("msg", "권한이 없습니다!");
-				return "fail_back";
-			} else if(id.equals("")) {
-				model.addAttribute("msg", "잘못된 접근입니다!");
-				return "fail_back";
-			}
-			
-			// 2-2) 세션 아이디와 전달받은 아이디가 같거나, 관리자이면 조회 작업 수행
-			// Service 객체의 getMemberInfo() 메서드 호출하여 회원 상세정보 조회
-			// => 파라미터 : 아이디(id)   리턴타입 : MemberVO(member)
-			MemberVO member = service.getMemberInfo(id);
-			
-			// -----------------------------------------------------------------
-			// 만약, 리턴타입을 MemberVO 객체가 아닌 
-			// -----------------------------------------------------------------
-			
-			// 조회 결과를 Model 객체에 "member" 속성명으로 저장
-			model.addAttribute("member", member);
-//			System.out.println(member);
-			
-			// member/member_info.jsp 페이지로 포워딩
-			return "member/member_info";
-		}
-	}
+	
 	// "/AdminMain.me" 요청에 대한 회원목록 조회 비즈니스 로직 처리 => admin()
 	@GetMapping(value = "/AdminMain.me")
 	public String admin(HttpSession session, Model model) {
@@ -195,9 +159,48 @@ public class MemberController {
 		
 	}
 	
-	
+	// "/MemberInfo.me" 요청에 대한 회원 상세정보 조회 비즈니스 로직 처리 => memberInfo()
+		// => 파라미터 : 아이디(id)
+		@GetMapping(value = "/MemberInfo.me")
+		public String memberInfo(String id, HttpSession session, Model model) {
+			String sId = (String)session.getAttribute("sId");
+			
+			// 1. 세션 아이디가 없을 경우 "잘못된 접근"
+			if(sId == null || sId.equals("")) {
+				model.addAttribute("msg", "잘못된 접근입니다!");
+				return "fail_back";
+			} else {
+				// 2. 세션 아이디가 있을 경우
+				// 2-1) 세션 아이디와 전달받은 아이디가 다르고, 관리자가 아니면 "권한없음"
+				// !id.equals("")
+				System.out.println("세션 아이디 있음. 아이디 : " + id);
+				if(id != null && !id.equals("") && !id.equals(sId) && !sId.equals("admin")) {
+					model.addAttribute("msg", "권한이 없습니다!");
+					return "fail_back";
+				} else if(id.equals("")) {
+					model.addAttribute("msg", "잘못된 접근입니다!");
+					return "fail_back";
+				}
+				
+				// 2-2) 세션 아이디와 전달받은 아이디가 같거나, 관리자이면 조회 작업 수행
+				// Service 객체의 getMemberInfo() 메서드 호출하여 회원 상세정보 조회
+				// => 파라미터 : 아이디(id)   리턴타입 : MemberVO(member)
+				MemberVO member = service.getMemberInfo(id);
+				
+				// -----------------------------------------------------------------
+				// 만약, 리턴타입을 MemberVO 객체가 아닌 
+				// -----------------------------------------------------------------
+				
+				// 조회 결과를 Model 객체에 "member" 속성명으로 저장
+				model.addAttribute("member", member);
+//				System.out.println(member);
+				
+				// member/member_info.jsp 페이지로 포워딩
+				return "member/member_info";
+			}
+		}
 	// MemberUpdate
-	@GetMapping(value = "/MemberUpdate.me")
+	@PostMapping(value = "/MemberUpdate.me")
 	public String memberUpdate(
 			@ModelAttribute MemberVO member,
 			@RequestParam String newPasswd,
@@ -205,7 +208,7 @@ public class MemberController {
 		
 //		System.out.println(member);
 //		System.out.println(newPasswd);
-		//입력받은 패스워드 확인 작업
+		// 1. 입력받은 패스워드 확인 작업
 		BCryptPasswordEncoder passwdEncoder = new BCryptPasswordEncoder();
  
 		String passwd = service.getPasswd(member.getId());
@@ -214,7 +217,12 @@ public class MemberController {
 			model.addAttribute("msg", "권한이 없습니다!");
 			return "fail_back";
 		}
+//		System.out.println("평문 : " + member.getPasswd());
+//		System.out.println("암호문 : " + securePasswd);
+
+		// 2. 패스워드 확인 성공 시 newPasswd 입력되었을 때(존재할 때), 암호화를 수행한다.
 		
+		newPasswd = passwdEncoder.encode(newPasswd);
 		int updateCount = service.modifyMemberInfo(member, newPasswd);
 		
 		if(updateCount > 0) { // 성공
@@ -228,7 +236,85 @@ public class MemberController {
 			model.addAttribute("msg", "수정 실패!");
 			return "fail_back";
 		}
+	}//memberUpdate 끝
+	//MemberDelete.me 요청에 대해 폼으로 이동
+	@GetMapping(value = "/MemberDelete.me")
+	public String delete(HttpSession session, @ModelAttribute MemberVO member, Model model) {
+		String sId = (String)session.getAttribute("sId");
+		
+		// 1. 세션 아이디가 없을 경우 "잘못된 접근"
+		if(sId == null || sId.equals("")) {
+			model.addAttribute("msg", "잘못된 접근입니다!");
+			return "fail_back";
+		} else {
+			// 2. 세션 아이디가 있을 경우
+			// 2-1) 세션 아이디와 전달받은 아이디가 다르고, 관리자가 아니면 "권한없음"
+			// !id.equals("")
+			System.out.println("세션 아이디 있음. 아이디 : " + member.getId());
+			if(member.getId() != null && !member.getId().equals("") && !member.getId().equals(sId) && !sId.equals("admin")) {
+				model.addAttribute("msg", "권한이 없습니다!");
+				return "fail_back";
+			} else if(member.getId().equals("")) {
+				model.addAttribute("msg", "잘못된 접근입니다!");
+				return "fail_back";
+			}
+			
+			if(sId.equals("admin")) {
+				return "redirect:/MemberDeletePro.me?id=" + member.getId(); // GET 방식
+			}else {
+				return "member/member_delete_form";
+			}
+			
+		}
+	}//delete
+	//관리자일 경우 GET, 아닐 경우 POST 이므로 함께 처리해야 함.
+	@RequestMapping(value = "/MemberDeletePro.me", method = {RequestMethod.GET, RequestMethod.POST})
+	public String deletePro(HttpSession session, @ModelAttribute MemberVO member, Model model) {
+		String sId = (String)session.getAttribute("sId");
+		
+		if(!sId.equals("admin")) {
+			
+		//패스워드 일치 여부 판별
+		// 1. 입력받은 패스워드 확인 작업
+			BCryptPasswordEncoder passwdEncoder = new BCryptPasswordEncoder();
+	
+			String passwd = service.getPasswd(member.getId());
+
+			if(passwd == null || !passwdEncoder.matches(member.getPasswd(), passwd)) { // 실패
+				model.addAttribute("msg", "권한이 없습니다!");
+				return "fail_back";
+			}
+		
+		}
+		
+		// 2. 일치했을 떄 삭제 작업 
+		int deleteCount = service.removeMember(member);
+		
+		// -----------------------------------------------------------------
+		// 만약, 리턴타입을 MemberVO 객체가 아닌 
+		// -----------------------------------------------------------------
+		if(deleteCount > 0) { // 성공
+			// 메인페이지로 리다이렉트
+			//관리자 or 일반 회원에 따라 다른 페이지로 리다이렉트
+			//1. 일반회원 -> main
+			//2. 관리자 -> AdminMain.me
+			if(sId.equals("admin")) {
+				return "redirect:/AdminMain.me";
+			}else {
+				//일반 회원일 때 삭제 시 세션도 같이 초기화
+				session.invalidate();
+				return "redirect:/";
+			}
+		} else { // 실패
+			// 오류 메시지 출력 및 이전 페이지로 돌아가는 기능을 공통으로 수행할
+			// fail_back.jsp 페이지로 포워딩(Dispatch)
+			// => 출력할 메세지를 해당 페이지로 전달
+			// => Model 객체를 통해 "msg" 속성명으로 "가입 실패!" 메세지 전달
+			model.addAttribute("msg", "수정 실패!");
+			return "fail_back";
+		}
 	}
+	
 }
 
 
