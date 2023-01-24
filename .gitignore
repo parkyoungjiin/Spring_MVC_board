@@ -110,3 +110,12 @@ hs_err_pid*
 # End of https://www.toptal.com/developers/gitignore/api/eclipse,java
 *.MF
 *.properties
+Servers/Tomcat v9.0 Server at localhost-config/catalina.policy
+Servers/Tomcat v9.0 Server at localhost-config/context.xml
+Servers/Tomcat v9.0 Server at localhost-config/server.xml
+Servers/Tomcat v9.0 Server at localhost-config/tomcat-users.xml
+Servers/Tomcat v9.0 Server at localhost-config/web.xml
+Spring_MVC_Board/target/m2e-wtp/web-resources/META-INF/MANIFEST.MF
+*.MF
+*.properties
+Spring_MVC_Board/target/m2e-wtp/web-resources/META-INF/maven/com.itwillbs/mvc_board/pom.properties

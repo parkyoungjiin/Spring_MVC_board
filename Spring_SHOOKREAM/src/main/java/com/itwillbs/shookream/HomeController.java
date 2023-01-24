@@ -1,4 +1,4 @@
-package com.itwillbs.mvc_board;
+package com.itwillbs.shookream;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -17,14 +17,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Controller
 public class HomeController {
 	
-	private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
-	
-	/**
-	 * Simply selects the home view to render by returning its name.
-	 */
 	@RequestMapping(value = "/", method = RequestMethod.GET)
-	public String home(Locale locale, Model model) {
-		return "main";
+	public String main(Locale locale, Model model) {
+		
+		
+		return "redirect:/main.ma";
 	}
 	
 }
