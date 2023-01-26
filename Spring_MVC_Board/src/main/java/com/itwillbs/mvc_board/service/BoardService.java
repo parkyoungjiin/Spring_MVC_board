@@ -1,5 +1,7 @@
 package com.itwillbs.mvc_board.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,26 @@ public class BoardService {
 	public int registBoard(BoardVO board) {
 		return mapper.insertBoard(board);
 	}
+
+	//게시물 목록 조회
+	public List<BoardVO> getBoardList(String searchType, String keyword, int startRow, int listLimit) {
+		return mapper.getBoardList(searchType, keyword, startRow, listLimit);
+	}
+
+	//전체 게시물 수 조회
+	
+	public int getBoardListCount(String searchType, String keyword) {
+		return  mapper.getBoardListCount(searchType, keyword);
+	}
+
+	public BoardVO getBoard(int board_num) {
+		return mapper.getBoard(board_num);
+	}
+
+	public void increaseReadcount(int board_num) {
+		mapper.increaseReadcount(board_num);
+	}
+
 }
 
 

@@ -2,9 +2,9 @@ package com.itwillbs.mvc_board.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +13,12 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.itwillbs.mvc_board.service.BoardService;
 import com.itwillbs.mvc_board.vo.BoardVO;
+import com.itwillbs.mvc_board.vo.PageInfo;
 
 @Controller
 public class BoardController {
@@ -24,7 +26,13 @@ public class BoardController {
 	private BoardService service;
 	
 	@GetMapping("/BoardWriteForm.bo")
-	public String write() {
+	public String write(Model model, HttpSession session) {
+		// 세션 아이디가 존재하지 않으면 "로그인 필수!" 출력하고 이전페이지로 이동시키기
+		String sId = (String)session.getAttribute("sId");
+		if(sId == null || sId.equals("")) {
+			model.addAttribute("msg", "로그인 필수!");
+			return "fail_back";
+		}
 		return "board/qna_board_write";
 	}
 	
@@ -41,6 +49,7 @@ public class BoardController {
 		String sId = (String)session.getAttribute("sId");
 		if(sId == null || sId.equals("")) {
 			model.addAttribute("msg", "로그인 필수!");
+			return "fail_back";
 		}
 		
 		// -------------------------------------------------------------------------
@@ -82,16 +91,29 @@ public class BoardController {
 //			System.out.println("원본 파일명 : " + originalFileName);
 //			System.out.println("파일크기 : " + fileSize + " Byte");
 			
-			// 파일명 중복 방지 대책
-			// 시스템에서 랜덤ID 값을 추출하여 파일명 앞에 붙이기("랜덤ID값_파일명" 형식)
-			// => 랜덤ID 값 추출은 UUID 클래스 활용(범용 고유 식별자)
-			String uuid = UUID.randomUUID().toString();
+			//***** 가져온 파일이 있을 경우에만 파일 이동 작업 수행 *****
+
+			//파일이 존재할 경우 (파일명을 랜덤ID_파일명)
+			if(!originalFileName.equals("")) {
+				// 파일명 중복 방지 대책
+				// 시스템에서 랜덤ID 값을 추출하여 파일명 앞에 붙이기("랜덤ID값_파일명" 형식)
+				// => 랜덤ID 값 추출은 UUID 클래스 활용(범용 고유 식별자)
+				String uuid = UUID.randomUUID().toString();
 //			System.out.println("업로드 될 파일명 : " + uuid + "_" + originalFileName);
-			
-			// 파일명을 결합하여 보관할 변수에 하나의 파일 문자열 결합
-			originalFileNames += originalFileName + "/";
-			realFileNames += uuid + "_" + originalFileName + "/";
+				
+				// 파일명을 결합하여 보관할 변수에 하나의 파일 문자열 결합
+				originalFileNames += originalFileName + "/";
+				realFileNames += uuid + "_" + originalFileName + "/";
+				
+			}else {
+				//파일이 존재하지 않을 경우 널 스트링으로 대체(슬래시 포함)
+				originalFileNames += "/";
+				realFileNames += "/";
+				
+			}
 		}
+			
+			
 		
 		// BoardVO 객체에 원본 파일명과 업로드 될 파일명 저장
 		board.setBoard_file(originalFileNames);
@@ -118,10 +140,16 @@ public class BoardController {
 				for(int i = 0; i < board.getFiles().length; i++) {
 					// 하나씩 배열에서 객체 꺼내기
 					MultipartFile mFile = board.getFiles()[i];
+					
+					
+					//** 가져온 파일이 있을 경우에만 파일 이동 작업 수행 **
 					// 파일명을 "/" 기준으로 분리하여 배열 인덱스와 동일한 위치의 문자열 사용
-					mFile.transferTo(
-						new File(saveDir, board.getBoard_real_file().split("/")[i])
-					);
+					if(!mFile.getOriginalFilename().equals("")) {
+						
+						mFile.transferTo(
+							new File(saveDir, board.getBoard_real_file().split("/")[i])
+						);
+					}
 				}
 			} catch (IllegalStateException e) {
 				e.printStackTrace();
@@ -137,8 +165,88 @@ public class BoardController {
 			return "fail_back";
 		}
 		
+	}//BoardWritePro 끝
+	
+	//파라미터
+	/*
+	 * 1) 검색타입 (기본값을 넣지 않으면 파라미터가 없어 오류가 발생하기에, 기본값을 널 스트링으로 넣어줘야 함.)
+	 * 2) 검색어 (기본값을 넣지 않으면 파라미터가 없어 오류가 발생하기에, 기본값을 널 스트링으로 넣어줘야 함.)
+	 * 3) 현재 페이지 번호 (INT의 경우는 기본값 1 무조건 넣어야 함.)
+	 * 4) 데이터 저장 객체
+	 * 
+	 */
+	@GetMapping(value = "/BoardList.bo")
+	public String list(@RequestParam(defaultValue = "") String searchType,
+			@RequestParam(defaultValue = "") String keyword,
+			@RequestParam(defaultValue = "1") int pageNum,
+			Model model) {
+		System.out.println("searchType : " + searchType);
+		System.out.println("keyword : " + keyword);
+//		List<BoardVO> boardList = service.getBoardList();
+		
+		// 페이징 처리를 위한 변수 선언
+				int listLimit = 10; // 한 페이지에서 표시할 게시물 목록을 10개로 제한
+				int startRow = (pageNum - 1) * listLimit; // 조회 시작 행번호 계산
+//				System.out.println("startRow = " + startRow);
+				// ---------------------------------------------------------------------------
+				// getBoardList() 메서드
+				// 파라미터 : 검색타입, 검색어, 시작행번호, 목록갯수
+				// 리턴타입 : List<BoardVO>
+				List<BoardVO> boardList = service.getBoardList(searchType, keyword, startRow, listLimit);
+				
+				// ---------------------------------------------------------------------------
+				// 페이징 처리
+				// 한 페이지에서 표시할 페이지 목록(번호) 갯수 계산
+				// 1. BoardListService - selectBoardListCount() 메서드를 호출하여 전체 게시물 수 조회(페이지 목록 계산에 사용)
+				// => 파라미터 : 검색어   리턴타입 : int(listCount)
+				int listCount = service.getBoardListCount(searchType, keyword);
+//							System.out.println("총 게시물 수 : " + listCount);
+				
+				// 2. 한 페이지에서 표시할 페이지 목록 갯수 설정
+				int pageListLimit = 10; // 한 페이지에서 표시할 페이지 목록을 3개로 제한
+				
+				// 3. 전체 페이지 목록 수 계산
+				int maxPage = listCount / listLimit 
+								+ (listCount % listLimit == 0 ? 0 : 1); 
+				
+				// 4. 시작 페이지 번호 계산
+				int startPage = (pageNum - 1) / pageListLimit * pageListLimit + 1;
+				
+				// 5. 끝 페이지 번호 계산
+				int endPage = startPage + pageListLimit - 1;
+				
+				// 6. 만약, 끝 페이지 번호(endPage)가 전체(최대) 페이지 번호(maxPage) 보다
+				//    클 경우, 끝 페이지 번호를 최대 페이지 번호로 교체
+				if(endPage > maxPage) {
+					endPage = maxPage;
+				}
+				
+				// PageInfo 객체 생성 후 페이징 처리 정보 저장
+				PageInfo pageInfo = new PageInfo(listCount, pageListLimit, maxPage, startPage, endPage);
+				// ---------------------------------------------------------------------------
+				
+				// 게시판 목록 객체와 페이징 정보 객체를 Model 객체에 저장
+				model.addAttribute("boardList", boardList);
+				model.addAttribute("pageInfo", pageInfo);
+		return "board/qna_board_list";
+	}//BoardList 끝
+	
+	@GetMapping(value = "BoardDetail.bo")
+	public String detail(@RequestParam int board_num, Model model) {
+		
+		BoardVO board = service.getBoard(board_num);
+		model.addAttribute("board", board);
+		
+		// BoardVO 객체 존재할 때 조회 수 증가 작업
+		if(board != null) {
+			service.increaseReadcount(board_num);
+			
+			//조회수 증가 후 BoardVO 객체의 조회수(board_readcount) 값 1 증가시키기.
+			board.setBoard_readcount(board.getBoard_readcount() + 1);
+		}
+		return "board/qna_board_view";
 	}
-}
+}//controller 끝
 
 
 
