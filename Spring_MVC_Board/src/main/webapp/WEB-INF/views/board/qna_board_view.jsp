@@ -2,6 +2,9 @@
     pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %> 
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %> 
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %> 
+<c:set var="path" value="${pageContext.request.contextPath}"></c:set>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -76,9 +79,25 @@
 			<tr>
 				<th width="70">첨부파일</th>
 				<td>
-					<a href="upload/${board.board_real_file }" download="${board.board_file }">
-						${board.board_file }
-					</a>
+					<%--
+					<JSTL Split>
+						1. JSTL Split 기능을 사용하기 위해 jstl functions 라이브러리 추가 필요
+						2. 분리할 문자열을 지정하여 대상 문자열 분리 후 변수에 저장
+							<c:set var ="변수명x" value="${fn:split("대상문자열", "구분자")}"
+						3. 분리된 문자열을 반복문을 통해 반복하여 접근
+							<c:foreach var="변수명y" items ="변수명x">
+							</c:foreach>
+					 --%>
+					 <c:set var="arrRealFile" value="${fn:split(board.board_real_file, '/') }"></c:set>
+					 <c:forEach var="realFile" items="${arrRealFile}">
+						<c:set var="nameLength" value="${fn:length(realFile) }"></c:set>	
+						<c:set var="indexOf_" value="${fn:indexOf(realFile, '_') }"></c:set>
+						<c:set var="fileName" value="${fn:substring(realFile, indexOf_ + 1, nameLength) }"></c:set>
+						
+						<a href="${path }/resources/upload/${realFile }" download="${fileName }">
+							${fileName }
+						</a>
+					 </c:forEach>
 				</td>
 				<th width="70">조회수</th>
 				<td>${board.board_readcount }</td>

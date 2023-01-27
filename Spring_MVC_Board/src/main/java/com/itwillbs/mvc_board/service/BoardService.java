@@ -38,7 +38,21 @@ public class BoardService {
 		mapper.increaseReadcount(board_num);
 	}
 
-}
+	public BoardVO selectBoardWriter(int board_num, String board_pass) {
+		return mapper.selectBoardWriter(board_num, board_pass);
+	}
+
+	public String getRealFile(int board_num) {
+		return mapper.getRealFile(board_num);
+	}
+
+	public int removeBoard(int board_num) {
+//		return mapper.removeBoard(board_num);
+		return 1;
+	}
+
+	
+}	
 
 
 

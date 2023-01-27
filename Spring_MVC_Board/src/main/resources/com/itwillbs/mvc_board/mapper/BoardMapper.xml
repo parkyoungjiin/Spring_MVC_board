@@ -128,4 +128,22 @@
 	
 	</update>
 	
+	<select id="selectBoardWriter" resultType="com.itwillbs.mvc_board.vo.BoardVO">
+		SELECT board_name
+			FROM board
+				WHERE board_num = #{board_num} AND board_pass = #{board_pass}
+	</select>
+	
+	<select id="getRealFile" resultType="string">
+		SELECT board_real_file
+			FROM board
+				WHERE board_num = #{board_num}	
+	</select>
+	
+	<delete id="removeBoard">
+		DELETE
+			FROM board
+				WHERE board_num = #{board_num}
+			
+	</delete>
 </mapper>

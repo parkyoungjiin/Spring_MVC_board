@@ -2,9 +2,14 @@ package com.itwillbs.mvc_board.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +70,7 @@ public class BoardController {
 		String saveDir = session.getServletContext().getRealPath(uploadDir);
 //		System.out.println("실제 업로드 경로 : " + saveDir);
 		
+		//---------------java.io.File 객체 활용 법--------------------------
 		// 실제 경로를 갖는 File 객체 생성
 		File f = new File(saveDir);
 		// 만약, 해당 경로 상에 실제 디렉토리(폴더)가 존재하지 않을 경우 새로 생성
@@ -72,6 +78,17 @@ public class BoardController {
 //			f.mkdir(); // 최종 경로가 존재하지 않으면 생성
 			f.mkdirs(); // 지정된 경로 상에 존재하지 않는 모든 경로를 차례대로 생성
 		}
+		
+//		//---------------java.nio 패키지(Files, Path, Paths) 활용 법--------------------------
+//		//1. Paths.get() 메서드를 통해 대상 파일, 경로에 대한 Path 객체 얻어오기
+//		Path path = Paths.get(saveDir);
+//		//2. FIles 클래스의 createDirectories() 메서드를 (directory는 예외는 알려주지 않음, ies는 디렉토리가 있으면 만들지 않고 넘어감)
+//		try {
+//			Files.createDirectories(path);
+//		} catch (IOException e1) {
+//			e1.printStackTrace();
+//		}
+		
 		
 		// BoardVO 객체에 전달된 MultipartFile 객체 꺼내기
 		// => 단, 복수개의 파라미터가 동일한 name 속성으로 전달된 경우 배열 타입으로 처리
@@ -175,60 +192,84 @@ public class BoardController {
 	 * 4) 데이터 저장 객체
 	 * 
 	 */
+//	@GetMapping(value = "/BoardList.bo")
+//	public String list(@RequestParam(defaultValue = "") String searchType,
+//			@RequestParam(defaultValue = "") String keyword,
+//			@RequestParam(defaultValue = "1") int pageNum,
+//			Model model) {
+//		System.out.println("searchType : " + searchType);
+//		System.out.println("keyword : " + keyword);
+////		List<BoardVO> boardList = service.getBoardList();
+//		
+//		// 페이징 처리를 위한 변수 선언
+//				int listLimit = 10; // 한 페이지에서 표시할 게시물 목록을 10개로 제한
+//				int startRow = (pageNum - 1) * listLimit; // 조회 시작 행번호 계산
+////				System.out.println("startRow = " + startRow);
+//				// ---------------------------------------------------------------------------
+//				// getBoardList() 메서드
+//				// 파라미터 : 검색타입, 검색어, 시작행번호, 목록갯수
+//				// 리턴타입 : List<BoardVO>
+//				List<BoardVO> boardList = service.getBoardList(searchType, keyword, startRow, listLimit);
+//				
+//				// ---------------------------------------------------------------------------
+//				// 페이징 처리
+//				// 한 페이지에서 표시할 페이지 목록(번호) 갯수 계산
+//				// 1. BoardListService - selectBoardListCount() 메서드를 호출하여 전체 게시물 수 조회(페이지 목록 계산에 사용)
+//				// => 파라미터 : 검색어   리턴타입 : int(listCount)
+//				int listCount = service.getBoardListCount(searchType, keyword);
+////							System.out.println("총 게시물 수 : " + listCount);
+//				
+//				// 2. 한 페이지에서 표시할 페이지 목록 갯수 설정
+//				int pageListLimit = 10; // 한 페이지에서 표시할 페이지 목록을 3개로 제한
+//				
+//				// 3. 전체 페이지 목록 수 계산
+//				int maxPage = listCount / listLimit 
+//								+ (listCount % listLimit == 0 ? 0 : 1); 
+//				
+//				// 4. 시작 페이지 번호 계산
+//				int startPage = (pageNum - 1) / pageListLimit * pageListLimit + 1;
+//				
+//				// 5. 끝 페이지 번호 계산
+//				int endPage = startPage + pageListLimit - 1;
+//				
+//				// 6. 만약, 끝 페이지 번호(endPage)가 전체(최대) 페이지 번호(maxPage) 보다
+//				//    클 경우, 끝 페이지 번호를 최대 페이지 번호로 교체
+//				if(endPage > maxPage) {
+//					endPage = maxPage;
+//				}
+//				
+//				// PageInfo 객체 생성 후 페이징 처리 정보 저장
+//				PageInfo pageInfo = new PageInfo(listCount, pageListLimit, maxPage, startPage, endPage);
+//				// ---------------------------------------------------------------------------
+//				
+//				// 게시판 목록 객체와 페이징 정보 객체를 Model 객체에 저장
+//				model.addAttribute("boardList", boardList);
+//				model.addAttribute("pageInfo", pageInfo);
+//		return "board/qna_board_list";
+//	}//BoardList 끝
+	
+	
+	//-------------ajax 요청을 통한 글목록 조회--------------------
+	// -> AJAX 요청에 대한 JSON 데이터로 응답
+	// -> 현재 메서드에서 응답 데이터를 바로 생성하여 출력하기 위해
+	// @ResponseBody 어노테이션 필요
+	// -> 이동할 페이지가 없기에 리턴타입을 void로 !
 	@GetMapping(value = "/BoardList.bo")
-	public String list(@RequestParam(defaultValue = "") String searchType,
+	public void list(@RequestParam(defaultValue = "") String searchType,
 			@RequestParam(defaultValue = "") String keyword,
 			@RequestParam(defaultValue = "1") int pageNum,
+			HttpServletResponse response,
 			Model model) {
-		System.out.println("searchType : " + searchType);
-		System.out.println("keyword : " + keyword);
-//		List<BoardVO> boardList = service.getBoardList();
 		
-		// 페이징 처리를 위한 변수 선언
-				int listLimit = 10; // 한 페이지에서 표시할 게시물 목록을 10개로 제한
-				int startRow = (pageNum - 1) * listLimit; // 조회 시작 행번호 계산
-//				System.out.println("startRow = " + startRow);
-				// ---------------------------------------------------------------------------
-				// getBoardList() 메서드
-				// 파라미터 : 검색타입, 검색어, 시작행번호, 목록갯수
-				// 리턴타입 : List<BoardVO>
-				List<BoardVO> boardList = service.getBoardList(searchType, keyword, startRow, listLimit);
-				
-				// ---------------------------------------------------------------------------
-				// 페이징 처리
-				// 한 페이지에서 표시할 페이지 목록(번호) 갯수 계산
-				// 1. BoardListService - selectBoardListCount() 메서드를 호출하여 전체 게시물 수 조회(페이지 목록 계산에 사용)
-				// => 파라미터 : 검색어   리턴타입 : int(listCount)
-				int listCount = service.getBoardListCount(searchType, keyword);
-//							System.out.println("총 게시물 수 : " + listCount);
-				
-				// 2. 한 페이지에서 표시할 페이지 목록 갯수 설정
-				int pageListLimit = 10; // 한 페이지에서 표시할 페이지 목록을 3개로 제한
-				
-				// 3. 전체 페이지 목록 수 계산
-				int maxPage = listCount / listLimit 
-								+ (listCount % listLimit == 0 ? 0 : 1); 
-				
-				// 4. 시작 페이지 번호 계산
-				int startPage = (pageNum - 1) / pageListLimit * pageListLimit + 1;
-				
-				// 5. 끝 페이지 번호 계산
-				int endPage = startPage + pageListLimit - 1;
-				
-				// 6. 만약, 끝 페이지 번호(endPage)가 전체(최대) 페이지 번호(maxPage) 보다
-				//    클 경우, 끝 페이지 번호를 최대 페이지 번호로 교체
-				if(endPage > maxPage) {
-					endPage = maxPage;
-				}
-				
-				// PageInfo 객체 생성 후 페이징 처리 정보 저장
-				PageInfo pageInfo = new PageInfo(listCount, pageListLimit, maxPage, startPage, endPage);
-				// ---------------------------------------------------------------------------
-				
-				// 게시판 목록 객체와 페이징 정보 객체를 Model 객체에 저장
-				model.addAttribute("boardList", boardList);
-				model.addAttribute("pageInfo", pageInfo);
-		return "board/qna_board_list";
+		// 응답데이터를 직접 생성하여 웹 페이지에 출력
+		// response.setCharacterEncodinf() 메서드로 출력 데이터 인코딩 지정
+		// response.getWriter() 메서드
+		try {
+			response.setCharacterEncoding("UTF-8");
+			response.getWriter().print("name:asdf");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}//BoardList 끝
 	
 	@GetMapping(value = "BoardDetail.bo")
@@ -245,7 +286,61 @@ public class BoardController {
 			board.setBoard_readcount(board.getBoard_readcount() + 1);
 		}
 		return "board/qna_board_view";
+	}//Detail 끝
+	
+	@GetMapping(value = "BoardDeleteForm.bo")
+	public String deleteForm() {
+		return "board/qna_board_delete";
 	}
+	
+	@PostMapping(value = "BoardDeletePro.bo")
+	public String deletePro(@ModelAttribute BoardVO board, 
+			@RequestParam(defaultValue = "1") int pageNum, Model model
+			, HttpSession session) {
+		// 전달받은 패스워드가 게시물의 패스워드와 일치하는 지 비교
+		// 리턴타입 : BoardVO(다른 방법으로 알려주심, BoardVO가 없으면 null이 뜨는 것을 활용)
+		// -> boolean으로 처리해도 상관 없어 보임.
+		if(service.selectBoardWriter(board.getBoard_num(), board.getBoard_pass()) != null) {
+			//삭제 전 파일명을 조회 (파라미터로 넘기면 길이 제한이 있기에, 최대한 구문을 사용하는 것이 좋음)
+			String realFile = service.getRealFile(board.getBoard_num());
+			//삭제 시 파일도 같이 삭제되야 함.
+			int deleteCount = service.removeBoard(board.getBoard_num());
+			
+			if(deleteCount > 0) {
+				//파일명을 "/" 기준으로 분리 후 for 반복문 통해 파일 삭제
+				
+//				String []arrRealFile = realFile.split("/");
+				for(String fileName : realFile.split("/")) {
+					System.out.println(fileName);
+					String uploadDir = "/resources/upload"; // 가상의 업로드 경로(루트(webapp) 기준)
+					String saveDir = session.getServletContext().getRealPath(uploadDir);
+				
+//					File f = new File(saveDir, fileName);
+//					if(!f.exists()) {
+//						f.delete(); // 지정된 경로 상에 존재하지 않는 모든 경로를 차례대로 생성
+//					}
+					//---------------java.nio 패키지(Files, Path, Paths) 활용 법--------------------------
+					//1. Paths.get() 메서드를 통해 대상 경로에 대한 Path 객체 얻어오기
+					Path path = Paths.get(saveDir + "/" + fileName);
+					//2. FIles 클래스의 deleteIfExists() 메서드를 호출하여 지정된 파일 삭제
+					try {
+						Files.deleteIfExists(path);
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				
+				}
+				return "redirect:/BoardList.bo?pageNum=" + pageNum;
+			} else {
+				model.addAttribute("msg", "게시물 삭제 실패");
+				return "fail_back";
+			}
+		}else {
+			model.addAttribute("msg","삭제 권한이 없습니다");
+		}
+		return "board/qna_board_delete";
+	}
+	
 }//controller 끝
 
 
